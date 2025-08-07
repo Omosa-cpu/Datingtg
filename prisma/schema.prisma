@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int       @id @default(autoincrement())
+  telegramId      String    @unique
+  name            String
+  age             Int
+  gender          String
+  bio             String?
+  profilePicture  String?
+  latitude        Float?
+  longitude       Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relationships
+  sentLikes       Like[]    @relation("UserLikes")
+  receivedLikes   Like[]    @relation("LikedUser")
+  matches1        Match[]   @relation("User1Matches")
+  matches2        Match[]   @relation("User2Matches")
+  sentMessages    Message[] @relation("MessageSender")
+
+  @@map("users")
+}
+
+model Like {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  likedUserId Int
+  createdAt   DateTime @default(now())
+
+  // Relationships
+  user        User     @relation("UserLikes", fields: [userId], references: [id], onDelete: Cascade)
+  likedUser   User     @relation("LikedUser", fields: [likedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, likedUserId])
+  @@map("likes")
+}
+
+model Match {
+  id        Int       @id @default(autoincrement())
+  user1Id   Int
+  user2Id   Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relationships
+  user1     User      @relation("User1Matches", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2     User      @relation("User2Matches", fields: [user2Id], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@unique([user1Id, user2Id])
+  @@map("matches")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  matchId   Int
+  senderId  Int
+  content   String
+  createdAt DateTime @default(now())
+
+  // Relationships
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  sender    User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
