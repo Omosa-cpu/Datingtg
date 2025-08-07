@@ -1,58 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import crypto from 'crypto'
+
+const BOT_TOKEN = process.env.BOT_TOKEN!
+
+function validateTelegramInitData(initData: string) {
+  const params = new URLSearchParams(initData)
+  const hash = params.get('hash')
+  params.delete('hash')
+
+  const dataCheckString = [...params.entries()]
+    .map(([key, value]) => `${key}=${value}`)
+    .sort()
+    .join('\n')
+
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest()
+  const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex')
+
+  if (computedHash !== hash) return null
+
+  // Parse user object
+  const userParam = params.get('user')
+  return userParam ? JSON.parse(userParam) : null
+}
 
 export async function GET(request: NextRequest) {
   try {
-    // Get current user from session/auth (simplified for now)
-    const currentUserId = 1 // Replace with actual user ID from auth
+    const initData = request.headers.get('x-telegram-init-data') || ''
+    const tgUser = validateTelegramInitData(initData)
 
-    let currentUser = null
-    try {
-      currentUser = await prisma.user.findUnique({
-        where: { id: currentUserId }
-      })
-    } catch (error) {
-      console.error('Database error finding user:', error)
-      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 })
+    if (!tgUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Find the logged-in user in DB using Telegram ID
+    const currentUser = await prisma.user.findUnique({
+      where: { telegramId: tgUser.id.toString() }
+    })
 
     if (!currentUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Get users of opposite gender that haven't been liked/passed
     const oppositeGender = currentUser.gender === 'male' ? 'female' : 'male'
-    
-    let profiles = []
-    try {
-      // Get liked user IDs
-      const likedUsers = await prisma.like.findMany({
-        where: { userId: currentUserId },
-        select: { likedUserId: true }
-      })
-      
-      const likedUserIds = likedUsers.map(like => like.likedUserId)
 
-      profiles = await prisma.user.findMany({
-        where: {
-          gender: oppositeGender,
-          id: {
-            not: currentUserId,
-            notIn: likedUserIds
-          }
-        },
-        take: 10,
-        orderBy: {
-          createdAt: 'desc'
+    const likedUserIds = await prisma.like.findMany({
+      where: { userId: currentUser.id },
+      select: { likedUserId: true }
+    }).then(likes => likes.map(like => like.likedUserId))
+
+    const profiles = await prisma.user.findMany({
+      where: {
+        gender: oppositeGender,
+        id: {
+          not: currentUser.id,
+          notIn: likedUserIds
         }
-      })
-    } catch (error) {
-      console.error('Database error fetching profiles:', error)
-      return NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 })
-    }
+      },
+      take: 10,
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
 
     return NextResponse.json({ profiles })
-
   } catch (error) {
     console.error('Error fetching profiles:', error)
     return NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 })
