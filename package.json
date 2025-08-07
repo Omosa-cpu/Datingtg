@@ -1,9 +1,14 @@
 {
-  "name": "my-v0-project",
+  "name": "telegram-dating-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "next build",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start"
@@ -38,8 +43,9 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.4.16",
     "class-variance-authority": "^0.7.1",
+    "cloudinary": "latest",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "crypto": "latest",
@@ -50,8 +56,8 @@
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "14.2.16",
-    "next-themes": "^0.4.4",
-    "prisma": "latest",
+    "next-themes": "latest",
+    "prisma": "^5.7.1",
     "react": "^18",
     "react-day-picker": "9.8.0",
     "react-dom": "^18",
@@ -70,8 +76,16 @@
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.0.4",
     "postcss": "^8.5",
-    "tailwindcss": "^3.4.17",
+    "prisma": "^5.7.1",
+    "tailwindcss": "^3.3.6",
+    "tsx": "^4.6.2",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

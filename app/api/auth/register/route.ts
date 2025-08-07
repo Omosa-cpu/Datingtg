@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { uploadToCloudinary } from '@/lib/cloudinary'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,13 +16,22 @@ export async function POST(request: NextRequest) {
       longitude: formData.get('longitude') ? parseFloat(formData.get('longitude') as string) : null,
     }
 
-    // Handle profile picture upload (mock implementation)
+    // Handle profile picture upload with Cloudinary
     const profilePicture = formData.get('profilePicture') as File
     let profilePictureUrl = null
     
-    if (profilePicture) {
-      // In production, upload to Supabase Storage or Cloudinary
-      profilePictureUrl = '/placeholder.svg?height=400&width=400'
+    if (profilePicture && profilePicture.size > 0) {
+      try {
+        profilePictureUrl = await uploadToCloudinary(
+          profilePicture, 
+          `dating-app/profiles/${userData.telegramId}`
+        )
+      } catch (error) {
+        console.error('Image upload failed:', error)
+        return NextResponse.json({ 
+          error: 'Failed to upload profile picture' 
+        }, { status: 400 })
+      }
     }
 
     const user = await prisma.user.create({

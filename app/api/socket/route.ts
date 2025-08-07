@@ -1,7 +1,6 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { Server as NetServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
-import { NextApiResponse } from 'next'
 
 export const config = {
   api: {
@@ -9,7 +8,7 @@ export const config = {
   },
 }
 
-interface NextApiResponseServerIO extends NextApiResponse {
+interface NextApiResponseServerIO extends NextResponse {
   socket: {
     server: NetServer & {
       io: SocketIOServer
@@ -54,6 +53,21 @@ const SocketHandler = (req: NextRequest, res: NextApiResponseServerIO) => {
       })
     })
   }
+
+  if (req.method === 'GET') {
+    return NextResponse.json({ 
+      message: 'Socket.IO endpoint',
+      status: 'available' 
+    })
+  }
+
+  if (req.method === 'POST') {
+    return NextResponse.json({ 
+      message: 'Socket.IO endpoint',
+      status: 'available' 
+    })
+  }
+
   res.end()
 }
 

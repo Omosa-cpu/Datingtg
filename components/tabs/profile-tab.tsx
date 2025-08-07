@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ImageUpload } from '@/components/profile/image-upload'
 import { Edit, Save, X } from 'lucide-react'
 
 interface ProfileTabProps {
@@ -18,6 +19,7 @@ export function ProfileTab({ user }: ProfileTabProps) {
     age: user?.age || '',
     bio: user?.bio || '',
   })
+  const [profileImage, setProfileImage] = useState(user?.profilePicture || '')
 
   const handleSave = async () => {
     try {
@@ -37,6 +39,10 @@ export function ProfileTab({ user }: ProfileTabProps) {
     }
   }
 
+  const handleImageUpdate = (imageUrl: string) => {
+    setProfileImage(imageUrl)
+  }
+
   return (
     <div className="p-4">
       <Card>
@@ -50,20 +56,12 @@ export function ProfileTab({ user }: ProfileTabProps) {
             {isEditing ? <X className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
           </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-center mb-6">
-            <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center">
-              {user?.profilePicture ? (
-                <img
-                  src={user.profilePicture || "/placeholder.svg"}
-                  alt="Profile"
-                  className="w-full h-full rounded-full object-cover"
-                />
-              ) : (
-                <span className="text-4xl">👤</span>
-              )}
-            </div>
-          </div>
+        <CardContent className="space-y-6">
+          <ImageUpload
+            currentImage={profileImage}
+            userId={user?.id?.toString() || '1'}
+            onImageUpdate={handleImageUpdate}
+          />
 
           <div>
             <Label htmlFor="name">Name</Label>

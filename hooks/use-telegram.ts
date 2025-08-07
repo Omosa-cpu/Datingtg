@@ -1,12 +1,6 @@
 'use client'
 
-import { useContext } from 'react'
-import { TelegramContext } from '@/components/providers/telegram-provider'
+import { useTelegram as useTelegramFromProvider } from '@/components/providers/telegram-provider'
 
-export const useTelegram = () => {
-  const context = useContext(TelegramContext)
-  if (!context) {
-    throw new Error('useTelegram must be used within TelegramProvider')
-  }
-  return context
-}
+// Re-export the hook from the provider
+export const useTelegram = useTelegramFromProvider
