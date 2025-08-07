@@ -14,7 +14,7 @@ async function main() {
         age: 25,
         gender: 'male',
         bio: 'Test user for development and debugging.',
-        profilePicture: 'https://res.cloudinary.com/your-cloud/image/upload/v1/dating-app/profiles/test-user.jpg',
+        profilePicture: 'https://res.cloudinary.com/dljoxzmu7/image/upload/v1/dating-app/profiles/test-user.jpg',
         latitude: 40.7128,
         longitude: -74.0060
       }
@@ -28,7 +28,7 @@ async function main() {
         age: 25,
         gender: 'female',
         bio: 'Love hiking and photography! Looking for someone to explore the world with.',
-        profilePicture: 'https://res.cloudinary.com/your-cloud/image/upload/v1/dating-app/profiles/alice.jpg',
+        profilePicture: 'https://res.cloudinary.com/dljoxzmu7/image/upload/v1/dating-app/profiles/alice.jpg',
         latitude: 40.7128,
         longitude: -74.0060
       }
@@ -42,7 +42,7 @@ async function main() {
         age: 28,
         gender: 'male',
         bio: 'Software developer by day, chef by night. Let\'s cook something amazing together!',
-        profilePicture: 'https://res.cloudinary.com/your-cloud/image/upload/v1/dating-app/profiles/bob.jpg',
+        profilePicture: 'https://res.cloudinary.com/dljoxzmu7/image/upload/v1/dating-app/profiles/bob.jpg',
         latitude: 40.7589,
         longitude: -73.9851
       }
@@ -56,7 +56,7 @@ async function main() {
         age: 23,
         gender: 'female',
         bio: 'Yoga instructor and dog lover. Seeking genuine connections and good vibes.',
-        profilePicture: 'https://res.cloudinary.com/your-cloud/image/upload/v1/dating-app/profiles/emma.jpg',
+        profilePicture: 'https://res.cloudinary.com/dljoxzmu7/image/upload/v1/dating-app/profiles/emma.jpg',
         latitude: 40.7505,
         longitude: -73.9934
       }
