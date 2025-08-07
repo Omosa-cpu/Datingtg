@@ -33,10 +33,14 @@ export function SocketProvider({ children }: SocketProviderProps) {
         // Dynamic import to avoid SSR issues
         const { io } = await import('socket.io-client')
         
-        socketInstance = io(process.env.NODE_ENV === 'production' 
+        const serverUrl = process.env.NODE_ENV === 'production' 
           ? window.location.origin
           : 'http://localhost:3000'
-        )
+        
+        socketInstance = io(serverUrl, {
+          transports: ['websocket', 'polling'],
+          timeout: 20000,
+        })
 
         socketInstance.on('connect', () => {
           console.log('Socket connected')
@@ -60,9 +64,11 @@ export function SocketProvider({ children }: SocketProviderProps) {
       }
     }
 
-    initSocket()
+    // Delay initialization to avoid hydration issues
+    const timer = setTimeout(initSocket, 1000)
 
     return () => {
+      clearTimeout(timer)
       if (socketInstance) {
         socketInstance.disconnect()
       }

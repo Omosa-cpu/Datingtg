@@ -16,9 +16,7 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverActions: true,
-  },
+  // Remove deprecated serverActions config - it's enabled by default in Next.js 14
   // Enable WebSocket support for Socket.IO
   webpack: (config) => {
     config.externals.push({

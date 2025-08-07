@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Server as NetServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}
+// Remove deprecated config export - use route segment config instead
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 interface NextApiResponseServerIO extends NextResponse {
   socket: {
@@ -54,21 +52,23 @@ const SocketHandler = (req: NextRequest, res: NextApiResponseServerIO) => {
     })
   }
 
-  if (req.method === 'GET') {
-    return NextResponse.json({ 
-      message: 'Socket.IO endpoint',
-      status: 'available' 
-    })
-  }
-
-  if (req.method === 'POST') {
-    return NextResponse.json({ 
-      message: 'Socket.IO endpoint',
-      status: 'available' 
-    })
-  }
-
   res.end()
 }
 
 export default SocketHandler
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json({ 
+    message: 'Socket.IO endpoint',
+    status: 'available',
+    timestamp: new Date().toISOString()
+  })
+}
+
+export async function POST(request: NextRequest) {
+  return NextResponse.json({ 
+    message: 'Socket.IO endpoint',
+    status: 'available',
+    timestamp: new Date().toISOString()
+  })
+}

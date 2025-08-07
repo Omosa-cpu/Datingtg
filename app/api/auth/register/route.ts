@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { uploadToCloudinary } from '@/lib/cloudinary'
+
+// Add route segment config for better performance
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,15 +25,16 @@ export async function POST(request: NextRequest) {
     
     if (profilePicture && profilePicture.size > 0) {
       try {
+        // Only import cloudinary when needed to avoid build issues
+        const { uploadToCloudinary } = await import('@/lib/cloudinary')
         profilePictureUrl = await uploadToCloudinary(
           profilePicture, 
           `dating-app/profiles/${userData.telegramId}`
         )
       } catch (error) {
         console.error('Image upload failed:', error)
-        return NextResponse.json({ 
-          error: 'Failed to upload profile picture' 
-        }, { status: 400 })
+        // Continue without image rather than failing completely
+        profilePictureUrl = null
       }
     }
 

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { uploadToCloudinary, deleteFromCloudinary, extractPublicId } from '@/lib/cloudinary'
+
+// Add route segment config
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,21 +26,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Delete old image if exists
-    if (user.profilePicture) {
-      try {
-        const publicId = extractPublicId(user.profilePicture)
-        await deleteFromCloudinary(publicId)
-      } catch (error) {
-        console.error('Failed to delete old image:', error)
-      }
-    }
+    let imageUrl = null
 
-    // Upload new image
-    const imageUrl = await uploadToCloudinary(
-      profilePicture,
-      `dating-app/profiles/${user.telegramId}`
-    )
+    try {
+      // Dynamic import to avoid build issues
+      const { uploadToCloudinary, deleteFromCloudinary, extractPublicId } = await import('@/lib/cloudinary')
+
+      // Delete old image if exists
+      if (user.profilePicture) {
+        try {
+          const publicId = extractPublicId(user.profilePicture)
+          await deleteFromCloudinary(publicId)
+        } catch (error) {
+          console.error('Failed to delete old image:', error)
+        }
+      }
+
+      // Upload new image
+      imageUrl = await uploadToCloudinary(
+        profilePicture,
+        `dating-app/profiles/${user.telegramId}`
+      )
+    } catch (error) {
+      console.error('Cloudinary error:', error)
+      return NextResponse.json({ 
+        error: 'Failed to upload image' 
+      }, { status: 500 })
+    }
 
     // Update user profile
     const updatedUser = await prisma.user.update({
