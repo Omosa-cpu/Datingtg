@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ProfileCard } from '@/components/profile/profile-card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import useEmblaCarousel from 'embla-carousel-react'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 
 interface HomeTabProps {
   user: any
@@ -10,12 +13,32 @@ interface HomeTabProps {
 
 export function HomeTab({ user }: HomeTabProps) {
   const [profiles, setProfiles] = useState([])
-  const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'center' })
+  const [canScrollPrev, setCanScrollPrev] = useState(false)
+  const [canScrollNext, setCanScrollNext] = useState(false)
 
   useEffect(() => {
     fetchProfiles()
   }, [])
+
+  useEffect(() => {
+    if (!emblaApi) return
+
+    const updateScrollBtns = () => {
+      setCanScrollPrev(emblaApi.canScrollPrev())
+      setCanScrollNext(emblaApi.canScrollNext())
+    }
+
+    emblaApi.on('select', updateScrollBtns)
+    emblaApi.on('reInit', updateScrollBtns)
+    updateScrollBtns() // Initial check
+
+    return () => {
+      emblaApi.off('select', updateScrollBtns)
+      emblaApi.off('reInit', updateScrollBtns)
+    }
+  }, [emblaApi])
 
   const fetchProfiles = async () => {
     try {
@@ -29,32 +52,42 @@ export function HomeTab({ user }: HomeTabProps) {
     }
   }
 
-  const handleLike = async (profileId: string) => {
+  const handleSwipeAction = async (profileId: string, action: 'like' | 'pass') => {
     try {
       const response = await fetch('/api/likes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ likedUserId: profileId }),
+        body: JSON.stringify({ likedUserId: profileId, action }), // Pass action to API if needed
       })
 
       const data = await response.json()
       
       if (data.match) {
-        // Show match notification
         alert('It\'s a match! 🎉')
       }
 
-      setCurrentIndex(prev => prev + 1)
+      // Move to the next slide after action
+      if (emblaApi && emblaApi.canScrollNext()) {
+        emblaApi.scrollNext()
+      } else {
+        // If no more profiles, clear them or show end message
+        setProfiles([]) // Or handle end of profiles differently
+      }
+
     } catch (error) {
-      console.error('Error liking profile:', error)
+      console.error(`Error ${action}ing profile:`, error)
     }
   }
 
-  const handlePass = () => {
-    setCurrentIndex(prev => prev + 1)
-  }
+  const scrollPrev = useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev()
+  }, [emblaApi])
+
+  const scrollNext = useCallback(() => {
+    if (emblaApi) emblaApi.scrollNext()
+  }, [emblaApi])
 
   if (loading) {
     return (
@@ -64,26 +97,45 @@ export function HomeTab({ user }: HomeTabProps) {
     )
   }
 
-  if (currentIndex >= profiles.length) {
+  if (profiles.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen p-4">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">No more profiles</h2>
           <p className="text-gray-600">Check back later for new people!</p>
+          <Button onClick={fetchProfiles} className="mt-4">Refresh Profiles</Button>
         </div>
       </div>
     )
   }
 
-  const currentProfile = profiles[currentIndex]
-
   return (
-    <div className="p-4 h-screen flex items-center justify-center">
-      <ProfileCard
-        profile={currentProfile}
-        onLike={() => handleLike(currentProfile.id)}
-        onPass={handlePass}
-      />
+    <div className="relative h-screen flex flex-col items-center justify-center p-4">
+      <div className="embla w-full max-w-sm mx-auto h-full flex items-center justify-center">
+        <div className="embla__viewport w-full h-full" ref={emblaRef}>
+          <div className="embla__container flex h-full">
+            {profiles.map((profile: any) => (
+              <div className="embla__slide flex-[0_0_100%] min-w-0 flex items-center justify-center p-2" key={profile.id}>
+                <ProfileCard
+                  profile={profile}
+                  onLike={() => handleSwipeAction(profile.id, 'like')}
+                  onPass={() => handleSwipeAction(profile.id, 'pass')}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Navigation Buttons (Optional, for desktop or accessibility) */}
+      <div className="absolute bottom-20 left-0 right-0 flex justify-center space-x-4 z-10">
+        <Button onClick={scrollPrev} disabled={!canScrollPrev} variant="outline" size="icon">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <Button onClick={scrollNext} disabled={!canScrollNext} variant="outline" size="icon">
+          <ArrowRight className="w-5 h-5" />
+        </Button>
+      </div>
     </div>
   )
 }
