@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
 
-const BOT_TOKEN = process.env.BOT_TOKEN! // Your Telegram bot token
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN! // Your Telegram bot token
 
 function validateTelegramInitData(initData: string) {
   const params = new URLSearchParams(initData)
@@ -39,10 +39,21 @@ function validateTelegramInitData(initData: string) {
 export async function GET(request: NextRequest) {
   try {
     const initData = request.headers.get('x-telegram-init-data') || ''
-    const tgUser = validateTelegramInitData(initData)
+    
+    // In development, use a test user ID if initData is not available or invalid
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    let tgUser = null;
 
-    if (!tgUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (isDevelopment) {
+      // Use a hardcoded test user ID for development
+      tgUser = { id: process.env.TEST_TELEGRAM_ID || '257779219536125' }; 
+    } else {
+      // In production, validate initData
+      tgUser = validateTelegramInitData(initData);
+    }
+
+    if (!tgUser || !tgUser.id) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid Telegram user data' }, { status: 401 });
     }
 
     // Ensure Telegram ID is a string
@@ -51,7 +62,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!currentUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'User not found or profile not completed' }, { status: 404 })
     }
 
     const oppositeGender =

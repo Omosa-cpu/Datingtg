@@ -5,20 +5,20 @@ import { Button } from '@/components/ui/button'
 import { Upload, X, Loader2 } from 'lucide-react'
 
 interface ImageUploadProps {
-  currentImage?: string
+  currentImage?: string // This will be the URL
   userId: string
-  onImageUpdate: (imageUrl: string) => void
+  onImageUpdate: (imageUrl: string) => void // Callback to update parent with new URL
 }
 
 export function ImageUpload({ currentImage, userId, onImageUpdate }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null) // For immediate local preview
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Create preview
+    // Create local preview URL immediately
     const reader = new FileReader()
     reader.onload = (e) => {
       setPreviewUrl(e.target?.result as string)
@@ -40,21 +40,22 @@ export function ImageUpload({ currentImage, userId, onImageUpdate }: ImageUpload
       const data = await response.json()
       
       if (data.success) {
-        onImageUpdate(data.imageUrl)
-        setPreviewUrl(null)
+        onImageUpdate(data.imageUrl) // Pass the new URL back to the parent
+        setPreviewUrl(null) // Clear local preview as actual image is now set
       } else {
         alert(data.error || 'Upload failed')
-        setPreviewUrl(null)
+        setPreviewUrl(null) // Clear preview on failure
       }
     } catch (error) {
       console.error('Upload error:', error)
       alert('Upload failed')
-      setPreviewUrl(null)
+      setPreviewUrl(null) // Clear preview on failure
     } finally {
       setUploading(false)
     }
   }
 
+  // Display logic: local preview takes precedence, then currentImage from props
   const displayImage = previewUrl || currentImage
 
   return (

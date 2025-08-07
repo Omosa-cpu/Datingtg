@@ -42,11 +42,21 @@ export function HomeTab({ user }: HomeTabProps) {
 
   const fetchProfiles = async () => {
     try {
-      const response = await fetch('/api/profiles/discover')
+      const response = await fetch('/api/profiles/discover', {
+        headers: {
+          'x-telegram-init-data': user?.initData || '', // Pass initData for auth
+        },
+      })
       const data = await response.json()
-      setProfiles(data.profiles || [])
+      if (response.ok) {
+        setProfiles(data.profiles || [])
+      } else {
+        console.error('Failed to fetch profiles:', data.error);
+        setProfiles([]); // Clear profiles on error
+      }
     } catch (error) {
       console.error('Error fetching profiles:', error)
+      setProfiles([]);
     } finally {
       setLoading(false)
     }
@@ -58,6 +68,7 @@ export function HomeTab({ user }: HomeTabProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-telegram-init-data': user?.initData || '', // Pass initData for auth
         },
         body: JSON.stringify({ likedUserId: profileId, action }), // Pass action to API if needed
       })

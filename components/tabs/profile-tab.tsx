@@ -19,34 +19,35 @@ export function ProfileTab({ user }: ProfileTabProps) {
     age: user?.age || '',
     bio: user?.bio || '',
   })
+  // profileImage now always stores the URL
   const [profileImage, setProfileImage] = useState(user?.profilePicture || '')
 
   const handleSave = async () => {
     try {
-      const body = new FormData()
-      body.append('name', formData.name)
-      body.append('age', formData.age.toString())
-      body.append('bio', formData.bio)
-      body.append('telegramId', user?.telegramId || '')
-      if (profileImage instanceof File) {
-        body.append('profilePicture', profileImage)
-      }
-
+      // Only send text data to the update API
       const response = await fetch('/api/profile/update', {
         method: 'PUT',
-        body
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       })
 
       if (response.ok) {
         setIsEditing(false)
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Failed to save profile changes.');
       }
     } catch (error) {
       console.error('Error updating profile:', error)
+      alert('Error saving profile changes. Please try again.');
     }
   }
 
-  const handleImageUpdate = (image: string | File) => {
-    setProfileImage(image)
+  // This callback receives the new image URL from ImageUpload
+  const handleImageUpdate = (imageUrl: string) => {
+    setProfileImage(imageUrl)
   }
 
   return (
@@ -63,23 +64,30 @@ export function ProfileTab({ user }: ProfileTabProps) {
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Show Profile Image */}
+          {/* Show Profile Image when not editing */}
           {!isEditing && profileImage && (
             <div className="flex justify-center">
               <img
-                src={typeof profileImage === 'string' ? profileImage : URL.createObjectURL(profileImage)}
+                src={profileImage || "/placeholder.svg"}
                 alt="Profile"
-                className="w-32 h-32 rounded-full object-cover border"
+                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
               />
             </div>
           )}
+          {!isEditing && !profileImage && (
+            <div className="flex justify-center">
+              <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg">
+                <span className="text-4xl">👤</span>
+              </div>
+            </div>
+          )}
 
-          {/* Image Upload in edit mode */}
+          {/* Image Upload component when editing */}
           {isEditing && (
             <ImageUpload
-              currentImage={typeof profileImage === 'string' ? profileImage : ''}
-              userId={user?.id?.toString() || '1'}
-              onImageUpdate={handleImageUpdate}
+              currentImage={profileImage} // Pass the current URL
+              userId={user?.id?.toString() || '1'} // Ensure userId is passed
+              onImageUpdate={handleImageUpdate} // Callback for new URL
             />
           )}
 
