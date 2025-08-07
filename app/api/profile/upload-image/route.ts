@@ -12,9 +12,10 @@ export async function POST(request: NextRequest) {
     const userId = formData.get('userId') as string
 
     if (!profilePicture || !userId) {
-      return NextResponse.json({ 
-        error: 'Missing required fields' 
-      }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
     }
 
     // Get current user to check for existing image
@@ -26,32 +27,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    let imageUrl = null
+    let imageUrl: string | null = null
 
     try {
-      // Dynamic import to avoid build issues
-      const { uploadToCloudinary, deleteFromCloudinary, extractPublicId } = await import('@/lib/cloudinary')
+      // Convert the File to Buffer
+      const arrayBuffer = await profilePicture.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+
+      const { v2: cloudinary } = await import('cloudinary')
+      const { extractPublicId } = await import('@/lib/cloudinary-utils') // helper for extracting ID
+
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+      })
 
       // Delete old image if exists
       if (user.profilePicture) {
         try {
           const publicId = extractPublicId(user.profilePicture)
-          await deleteFromCloudinary(publicId)
+          await cloudinary.uploader.destroy(publicId)
         } catch (error) {
           console.error('Failed to delete old image:', error)
         }
       }
 
-      // Upload new image
-      imageUrl = await uploadToCloudinary(
-        profilePicture,
-        `dating-app/profiles/${user.telegramId}`
-      )
+      // Upload the new image using stream
+      imageUrl = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              folder: `dating-app/profiles/${user.telegramId}`,
+              resource_type: 'image'
+            },
+            (error, result) => {
+              if (error) reject(error)
+              else resolve(result?.secure_url || null)
+            }
+          )
+          .end(buffer)
+      })
     } catch (error) {
       console.error('Cloudinary error:', error)
-      return NextResponse.json({ 
-        error: 'Failed to upload image' 
-      }, { status: 500 })
+      return NextResponse.json(
+        { error: 'Failed to upload image' },
+        { status: 500 }
+      )
     }
 
     // Update user profile
@@ -60,16 +82,16 @@ export async function POST(request: NextRequest) {
       data: { profilePicture: imageUrl }
     })
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       imageUrl,
-      user: updatedUser 
+      user: updatedUser
     })
-
   } catch (error) {
     console.error('Image upload error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to upload image' 
-    }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to upload image' },
+      { status: 500 }
+    )
   }
 }
