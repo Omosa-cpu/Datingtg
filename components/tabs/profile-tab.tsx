@@ -23,12 +23,18 @@ export function ProfileTab({ user }: ProfileTabProps) {
 
   const handleSave = async () => {
     try {
+      const body = new FormData()
+      body.append('name', formData.name)
+      body.append('age', formData.age.toString())
+      body.append('bio', formData.bio)
+      body.append('telegramId', user?.telegramId || '')
+      if (profileImage instanceof File) {
+        body.append('profilePicture', profileImage)
+      }
+
       const response = await fetch('/api/profile/update', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        body
       })
 
       if (response.ok) {
@@ -39,8 +45,8 @@ export function ProfileTab({ user }: ProfileTabProps) {
     }
   }
 
-  const handleImageUpdate = (imageUrl: string) => {
-    setProfileImage(imageUrl)
+  const handleImageUpdate = (image: string | File) => {
+    setProfileImage(image)
   }
 
   return (
@@ -57,11 +63,25 @@ export function ProfileTab({ user }: ProfileTabProps) {
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
-          <ImageUpload
-            currentImage={profileImage}
-            userId={user?.id?.toString() || '1'}
-            onImageUpdate={handleImageUpdate}
-          />
+          {/* Show Profile Image */}
+          {!isEditing && profileImage && (
+            <div className="flex justify-center">
+              <img
+                src={typeof profileImage === 'string' ? profileImage : URL.createObjectURL(profileImage)}
+                alt="Profile"
+                className="w-32 h-32 rounded-full object-cover border"
+              />
+            </div>
+          )}
+
+          {/* Image Upload in edit mode */}
+          {isEditing && (
+            <ImageUpload
+              currentImage={typeof profileImage === 'string' ? profileImage : ''}
+              userId={user?.id?.toString() || '1'}
+              onImageUpdate={handleImageUpdate}
+            />
+          )}
 
           <div>
             <Label htmlFor="name">Name</Label>
