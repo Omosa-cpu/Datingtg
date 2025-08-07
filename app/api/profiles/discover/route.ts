@@ -19,7 +19,6 @@ function validateTelegramInitData(initData: string) {
 
   if (computedHash !== hash) return null
 
-  // Parse user object
   const userParam = params.get('user')
   return userParam ? JSON.parse(userParam) : null
 }
@@ -42,28 +41,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const oppositeGender = currentUser.gender === 'male' ? 'female' : 'male'
-
+    // Get list of already liked user IDs
     const likedUserIds = await prisma.like.findMany({
       where: { userId: currentUser.id },
       select: { likedUserId: true }
     }).then(likes => likes.map(like => like.likedUserId))
 
-    const profiles = await prisma.user.findMany({
+    // Fetch ALL other users except the current one & liked ones
+    const allOtherUsers = await prisma.user.findMany({
       where: {
-        gender: oppositeGender,
         id: {
           not: currentUser.id,
           notIn: likedUserIds
         }
       },
-      take: 10,
       orderBy: {
         createdAt: 'desc'
       }
     })
 
-    return NextResponse.json({ profiles })
+    // Filter in JS — men see women, women see men
+    const oppositeGender = currentUser.gender === 'male' ? 'female' : 'male'
+    const profiles = allOtherUsers.filter(u => u.gender === oppositeGender)
+
+    // Return only 10 for now
+    return NextResponse.json({ profiles: profiles.slice(0, 10) })
+
   } catch (error) {
     console.error('Error fetching profiles:', error)
     return NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 })
